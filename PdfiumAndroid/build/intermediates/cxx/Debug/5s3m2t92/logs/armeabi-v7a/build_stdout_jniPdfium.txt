@@ -1,0 +1,2 @@
+ninja: Entering directory `/Users/abhishek/AndroidStudioProjects/testImport/PdfiumAndroid/.cxx/Debug/5s3m2t92/armeabi-v7a'
+ninja: no work to do.

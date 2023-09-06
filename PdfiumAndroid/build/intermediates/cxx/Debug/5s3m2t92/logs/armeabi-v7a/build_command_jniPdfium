@@ -1,0 +1,4 @@
+/Users/abhishek/Library/Android/sdk/cmake/3.22.1/bin/ninja \
+  -C \
+  /Users/abhishek/AndroidStudioProjects/testImport/PdfiumAndroid/.cxx/Debug/5s3m2t92/armeabi-v7a \
+  jniPdfium

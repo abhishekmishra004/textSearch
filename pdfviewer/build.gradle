@@ -1,0 +1,18 @@
+apply plugin: 'com.android.library'
+
+android {
+    namespace = "com.wordApp.pdfview"
+
+    compileSdkVersion 33
+    defaultConfig {
+        minSdkVersion 14
+        targetSdkVersion 33
+        versionCode 1
+        versionName "3.2.0-beta.1"
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    api(project(':PdfiumAndroid'))
+}
