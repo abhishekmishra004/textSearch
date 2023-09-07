@@ -509,16 +509,6 @@ class DragPinchManager implements GestureDetector.OnGestureListener, GestureDete
         }
 
         scrollValue = distanceY;
-//        scrollValue =  Math.abs(scrollValue);
-//        if (distanceY >= 0 && pdfView.getCurrentPage() == 0) {
-//            // code to hide
-//            if (pdfView.hideView != null)
-//                pdfView.hideView.setVisibility(View.GONE);
-//        }if (distanceY <= -10 && pdfView.getCurrentPage() == 0) {
-//            // code to show
-//            if (pdfView.hideView != null)
-//                pdfView.hideView.setVisibility(View.VISIBLE);
-//        }
         Log.e("ScrollY", String.valueOf(distanceY));
         return true;
     }
@@ -689,7 +679,7 @@ class DragPinchManager implements GestureDetector.OnGestureListener, GestureDete
             view_pager_toguard_lastX = lastX;
             view_pager_toguard_lastY = lastY;
         }
-        return true;
+        return retVal;
     }
 
 

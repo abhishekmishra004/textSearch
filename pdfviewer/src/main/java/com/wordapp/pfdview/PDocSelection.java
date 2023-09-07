@@ -63,7 +63,7 @@ public class PDocSelection extends View {
 
     private final RectF tmpPosRct = new RectF();
 
-    int pointer = 0;
+    int currentSearchPointer = 0;
     PointerEvent pointerEvent = PointerEvent.NONE;
 
     enum PointerEvent {
@@ -224,7 +224,7 @@ public class PDocSelection extends View {
             return;
         }
         try {
-            RectF VR = tmpPosRct;
+            RectF posRct = tmpPosRct;
             Matrix matrix = pDocView.matrix;
 
             if (pDocView.isSearching && pDocView.pdfFile != null) {
@@ -247,24 +247,11 @@ public class PDocSelection extends View {
                             ArrayList<SearchRecordItem> data = (ArrayList<SearchRecordItem>) record.data;
                             sortSearchItemsByRectPosition(data);
                             if (pointerEvent != PointerEvent.NONE) updatePage(data, page);
-                            ArrayList<RectF> lineRects = pDocView.mergeLineRects(Arrays.asList(data.get(pointer).rects), null);
-                            if (lineRects != null) {
-                                for (RectF rI : lineRects) {
-                                    pDocView.sourceToViewRectFFSearch(rI, VR, page);
-                                    matrix.reset();
-                                    int bmWidth = (int) rI.width();
-                                    int bmHeight = (int) rI.height();
-                                    pDocView.setMatrixArray(pDocView.srcArray, 0, 0, bmWidth, 0, bmWidth, bmHeight, 0, bmHeight);
-                                    pDocView.setMatrixArray(pDocView.dstArray, VR.left, VR.top, VR.right, VR.top, VR.right, VR.bottom, VR.left, VR.bottom);
-
-                                    matrix.setPolyToPoly(pDocView.srcArray, 0, pDocView.dstArray, 0, 4);
-                                    matrix.postRotate(0, pDocView.getScreenWidth(), pDocView.getScreenHeight());
-
-                                    canvas.save();
-                                    canvas.concat(matrix);
-                                    VR.set(0, 0, bmWidth, bmHeight);
-                                    canvas.drawRect(VR, rectHighlightPaint);
-                                    canvas.restore();
+                            ArrayList<RectF> lineRectList = pDocView.mergeLineRects(Arrays.asList(data.get(currentSearchPointer).rects));
+                            if (lineRectList != null) {
+                                for (RectF lineRect : lineRectList) {
+                                    pDocView.sourceToViewRectFFSearch(lineRect, posRct, page);
+                                    canvas.drawRect(posRct, rectHighlightPaint);
                                 }
                             }
                         } else {
@@ -280,15 +267,15 @@ public class PDocSelection extends View {
             }
 
             if (pDocView.hasSelection && pDocView.pdfFile != null) {
-                pDocView.sourceToViewRectFF(pDocView.handleLeftPos, VR);
-                float left = VR.left + drawableDeltaW;
-                pDocView.handleLeft.setBounds((int) (left - drawableWidth), (int) VR.bottom, (int) left, (int) (VR.bottom + drawableHeight));
+                pDocView.sourceToViewRectFF(pDocView.handleLeftPos, posRct);
+                float left = posRct.left + drawableDeltaW;
+                pDocView.handleLeft.setBounds((int) (left - drawableWidth), (int) posRct.bottom, (int) left, (int) (posRct.bottom + drawableHeight));
                 pDocView.handleLeft.draw(canvas);
                 //canvas.drawRect(pDocView.handleLeft.getBounds(), rectPaint);
 
-                pDocView.sourceToViewRectFF(pDocView.handleRightPos, VR);
-                left = VR.right - drawableDeltaW;
-                pDocView.handleRight.setBounds((int) left, (int) VR.bottom, (int) (left + drawableWidth), (int) (VR.bottom + drawableHeight));
+                pDocView.sourceToViewRectFF(pDocView.handleRightPos, posRct);
+                left = posRct.right - drawableDeltaW;
+                pDocView.handleRight.setBounds((int) left, (int) posRct.bottom, (int) (left + drawableWidth), (int) (posRct.bottom + drawableHeight));
                 pDocView.handleRight.draw(canvas);
 
                 // canvas.drawRect(pDocView.handleRight.getBounds(), rectPaint);
@@ -298,20 +285,20 @@ public class PDocSelection extends View {
 
                     ArrayList<RectF> rectPage = rectPool.get(i);
                     for (RectF rI : rectPage) {
-                        pDocView.sourceToViewRectFF(rI, VR);
+                        pDocView.sourceToViewRectFF(rI, posRct);
                         matrix.reset();
                         int bmWidth = (int) rI.width();
                         int bmHeight = (int) rI.height();
                         pDocView.setMatrixArray(pDocView.srcArray, 0, 0, bmWidth, 0, bmWidth, bmHeight, 0, bmHeight);
-                        pDocView.setMatrixArray(pDocView.dstArray, VR.left, VR.top, VR.right, VR.top, VR.right, VR.bottom, VR.left, VR.bottom);
+                        pDocView.setMatrixArray(pDocView.dstArray, posRct.left, posRct.top, posRct.right, posRct.top, posRct.right, posRct.bottom, posRct.left, posRct.bottom);
 
                         matrix.setPolyToPoly(pDocView.srcArray, 0, pDocView.dstArray, 0, 4);
                         matrix.postRotate(0, pDocView.getScreenWidth(), pDocView.getScreenHeight());
 
                         canvas.save();
                         canvas.concat(matrix);
-                        VR.set(-1, -1, bmWidth + 1, bmHeight + 1);
-                        canvas.drawRect(VR, rectPaint);
+                        posRct.set(0, 0, bmWidth, bmHeight);
+                        canvas.drawRect(posRct, rectPaint);
                         canvas.restore();
                     }
                 }
@@ -329,7 +316,6 @@ public class PDocSelection extends View {
         if (currentPage == pDocView.searchPage) {
             list.add(pDocView.searchRecords.get(pDocView.searchPage));
         }
-        Log.d("pointer_check", "getSearchRecords list.size:" + list.size() + " pDocView.searchPage:" + pDocView.searchPage + " currentPage:" + currentPage);
         return list;
     }
 
@@ -343,37 +329,22 @@ public class PDocSelection extends View {
 
     public void moveNext() {
         pointerEvent = PointerEvent.NEXT;
-        pointer++;
+        currentSearchPointer++;
         invalidate();
     }
 
     public void movePrev() {
         pointerEvent = PointerEvent.PREVIOUS;
-        pointer--;
+        currentSearchPointer--;
         invalidate();
     }
 
     private void updatePage(ArrayList<SearchRecordItem> data, int currentPage) {
-        Log.d("pointer_check", "data size:" + data.size() + " pointer:" + pointer + " searchPage:" + pDocView.searchPage);
-        if (data.size() <= pointer) {
-            pointer = 0;
-            if (currentPage < pDocView.pdfFile.getPagesCount()) {
-                pDocView.jumpTo(currentPage + 1);
-                if (pDocView.searchPage < pDocView.pdfFile.getPagesCount()) pDocView.searchPage++;
-                invalidate();
-            }
-        } else if (pointer < 0) {
-            SearchRecord previousSearch = pDocView.searchRecords.get(pDocView.currentPage - 1);
-            if (previousSearch != null) {
-                pointer = ((ArrayList<?>) (previousSearch.data)).size() - 1;
-            } else {
-                pointer = 0;
-            }
-            if (currentPage >= 1) {
-                pDocView.jumpTo(currentPage - 1);
-                if (pDocView.searchPage >= 1) pDocView.searchPage--;
-                invalidate();
-            }
+        Log.d("pointer_check", "data size:" + data.size() + " pointer:" + currentSearchPointer + " searchPage:" + pDocView.searchPage);
+        if (data.size() <= currentSearchPointer) {
+            checkNextAppearingSearch();
+        } else if (currentSearchPointer < 0) {
+            checkPrevAppearingSearch();
         }
     }
 
@@ -384,7 +355,7 @@ public class PDocSelection extends View {
             if (pDocView.searchRecords.containsKey(indexNext)) {
                 SearchRecord searchRecordNext = pDocView.searchRecords.get(indexNext);
                 if (searchRecordNext != null) {
-                    pointer = 0;
+                    currentSearchPointer = 0;
                     pDocView.jumpTo(indexNext);
                     pDocView.searchPage = indexNext;
                     invalidate();
@@ -403,7 +374,7 @@ public class PDocSelection extends View {
             if (pDocView.searchRecords.containsKey(indexPrev)) {
                 SearchRecord searchRecordNext = pDocView.searchRecords.get(indexPrev);
                 if (searchRecordNext != null) {
-                    pointer = 0;
+                    currentSearchPointer = ((ArrayList<?>) (searchRecordNext.data)).size() - 1;
                     pDocView.jumpTo(indexPrev);
                     pDocView.searchPage = indexPrev;
                     invalidate();
@@ -412,5 +383,9 @@ public class PDocSelection extends View {
             }
             --indexPrev;
         }
+    }
+
+    public void resetPointer() {
+        currentSearchPointer = 0;
     }
 }

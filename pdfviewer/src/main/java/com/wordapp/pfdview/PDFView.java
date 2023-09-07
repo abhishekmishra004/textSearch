@@ -15,6 +15,8 @@
  */
 package com.wordapp.pfdview;
 
+import static java.lang.Math.abs;
+
 import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
@@ -173,7 +175,7 @@ public class PDFView extends RelativeLayout {
 
     public void setSearchPageCountToZero() {
         Log.d("page_check", "scroll page:$page currentPage:" + currentPage);
-        selectionPaintView.pointer = -1;
+        selectionPaintView.currentSearchPointer = -1;
         searchPage = currentPage;
     }
 
@@ -469,6 +471,7 @@ public class PDFView extends RelativeLayout {
     public void search(String text) {
         searchRecords.clear();
         setIsSearching(true);
+        selectionPaintView.currentSearchPointer = 0;
         if (task != null) {
             closeTask();
         }
@@ -506,18 +509,6 @@ public class PDFView extends RelativeLayout {
         float xPreRotate = sourceToViewX(sx);
         float yPreRotate = sourceToViewY(sy);
         vTarget.set(xPreRotate, yPreRotate);
-       /* if (rotation == 0f) {
-
-        } else {
-            // Calculate offset by rotation
-            final float vCenterX = getScreenWidth() / 2;
-            final float vCenterY = getScreenHeight() / 2;
-            xPreRotate -= vCenterX;
-            yPreRotate -= vCenterY;
-            vTarget.x = (float) (xPreRotate * cos - yPreRotate * sin) + vCenterX;
-            vTarget.y = (float) (xPreRotate * sin + yPreRotate * cos) + vCenterY;
-        }
-*/
         return vTarget;
     }
 
@@ -600,13 +591,13 @@ public class PDFView extends RelativeLayout {
         }
     }
 
-    public ArrayList<RectF> mergeLineRects(List<RectF> selRects, RectF box) {
+    public ArrayList<RectF> mergeLineRects(List<RectF> selRects) {
         RectF tmp = new RectF();
         ArrayList<RectF> selLineRects = new ArrayList<>(selRects.size());
         RectF currentLineRect = null;
         for (RectF rI : selRects) {
             //CMN.Log("RectF rI:selRects", rI);
-            if (currentLineRect != null && Math.abs((currentLineRect.top + currentLineRect.bottom) - (rI.top + rI.bottom)) < currentLineRect.bottom - currentLineRect.top) {
+            if (currentLineRect != null && abs((currentLineRect.top + currentLineRect.bottom) - (rI.top + rI.bottom)) < currentLineRect.bottom - currentLineRect.top) {
                 currentLineRect.left = Math.min(currentLineRect.left, rI.left);
                 currentLineRect.right = Math.max(currentLineRect.right, rI.right);
                 currentLineRect.top = Math.min(currentLineRect.top, rI.top);
@@ -624,12 +615,7 @@ public class PDFView extends RelativeLayout {
                     currentLineRect.bottom = Math.max(currentLineRect.bottom, tmp.bottom);
                 }
             }
-            if (box != null) {
-                box.left = Math.min(box.left, currentLineRect.left);
-                box.right = Math.max(box.right, currentLineRect.right);
-                box.top = Math.min(box.top, currentLineRect.top);
-                box.bottom = Math.max(box.bottom, currentLineRect.bottom);
-            }
+            Log.d("pointer_check", "mergeLineRects list.size:" + selRects.size() + " currentLineRect:" + currentLineRect);
         }
         return selLineRects;
     }
@@ -799,15 +785,19 @@ public class PDFView extends RelativeLayout {
     }
 
     void sourceToViewRectFFSearch(@NonNull RectF sRect, @NonNull RectF vTarget, int currentPage) {
-
-
-        int pageX = (int) pdfFile.getSecondaryPageOffset(currentPage, getZoom());
-        int pageY = (int) pdfFile.getPageOffset(currentPage, getZoom());
+        int pageX, pageY;
+        if (isSwipeVertical()) {
+            pageX = (int) pdfFile.getSecondaryPageOffset(currentPage, getZoom());
+            pageY = (int) pdfFile.getPageOffset(currentPage, getZoom());
+        } else {
+            pageY = (int) pdfFile.getSecondaryPageOffset(currentPage, getZoom());
+            pageX = (int) pdfFile.getPageOffset(currentPage, getZoom());
+        }
         vTarget.set(
-                sRect.left * getZoom() + ((pageX)) + currentXOffset,
-                sRect.top * getZoom() + ((pageY)) + currentYOffset,
-                sRect.right * getZoom() + ((pageX)) + currentXOffset,
-                sRect.bottom * getZoom() + ((pageY)) + currentYOffset
+                sRect.left * getZoom() + pageX + currentXOffset,
+                sRect.top * getZoom() + pageY + currentYOffset,
+                sRect.right * getZoom() + pageX + currentXOffset,
+                sRect.bottom * getZoom() + pageY + currentYOffset
         );
     }
 
@@ -830,14 +820,19 @@ public class PDFView extends RelativeLayout {
         if (page == -1)
             page = curPage;
         Log.e("page", page + "");
-
-        int pageX = (int) pdfFile.getSecondaryPageOffset(page, getZoom());
-        int pageY = (int) pdfFile.getPageOffset(page, getZoom());
+        int pageX, pageY;
+        if (isSwipeVertical()) {
+            pageX = (int) pdfFile.getSecondaryPageOffset(currentPage, getZoom());
+            pageY = (int) pdfFile.getPageOffset(currentPage, getZoom());
+        } else {
+            pageY = (int) pdfFile.getSecondaryPageOffset(currentPage, getZoom());
+            pageX = (int) pdfFile.getPageOffset(currentPage, getZoom());
+        }
         vTarget.set(
-                sRect.left * getZoom() + ((pageX)) + currentXOffset,
-                sRect.top * getZoom() + ((pageY)) + currentYOffset,
-                sRect.right * getZoom() + ((pageX)) + currentXOffset,
-                sRect.bottom * getZoom() + ((pageY)) + currentYOffset
+                sRect.left * getZoom() + pageX + currentXOffset,
+                sRect.top * getZoom() + pageY + currentYOffset,
+                sRect.right * getZoom() + pageX + currentXOffset,
+                sRect.bottom * getZoom() + pageY + currentYOffset
         );
     }
 
@@ -1154,40 +1149,6 @@ public class PDFView extends RelativeLayout {
         }
         return null;
     }
-
-   /* public ArrayList<RectF> mergeLineRects(List<RectF> selRects, RectF box) {
-        RectF tmp = new RectF();
-        ArrayList<RectF> selLineRects = new ArrayList<>(selRects.size());
-        RectF currentLineRect = null;
-        for (RectF rI : selRects) {
-            //CMN.Log("RectF rI:selRects", rI);
-            if (currentLineRect != null && Math.abs((currentLineRect.top + currentLineRect.bottom) - (rI.top + rI.bottom)) < currentLineRect.bottom - currentLineRect.top) {
-                currentLineRect.left = Math.min(currentLineRect.left, rI.left);
-                currentLineRect.right = Math.max(currentLineRect.right, rI.right);
-                currentLineRect.top = Math.min(currentLineRect.top, rI.top);
-                currentLineRect.bottom = Math.max(currentLineRect.bottom, rI.bottom);
-            } else {
-                currentLineRect = new RectF();
-                currentLineRect.set(rI);
-                selLineRects.add(currentLineRect);
-                int cid = dragPinchManager.getCharIdxAtPos(rI.left + 1, rI.top + rI.height() / 2);
-                if (cid > 0) {
-                    getCharLoosePos(tmp, cid);
-                    currentLineRect.left = Math.min(currentLineRect.left, tmp.left);
-                    currentLineRect.right = Math.max(currentLineRect.right, tmp.right);
-                    currentLineRect.top = Math.min(currentLineRect.top, tmp.top);
-                    currentLineRect.bottom = Math.max(currentLineRect.bottom, tmp.bottom);
-                }
-            }
-            if (box != null) {
-                box.left = Math.min(box.left, currentLineRect.left);
-                box.right = Math.max(box.right, currentLineRect.right);
-                box.top = Math.min(box.top, currentLineRect.top);
-                box.bottom = Math.max(box.bottom, currentLineRect.bottom);
-            }
-        }
-        return selLineRects;
-    }*/
 
     public boolean hasSelection() {
         return hasSelection;

@@ -41,6 +41,7 @@ class MainActivity : AppCompatActivity() {
             .fitEachPage(true)
             .pageFitPolicy(FitPolicy.BOTH)
             .scrollHandle(DefaultScrollHandle(this))
+            //.swipeHorizontal(true)
             .onPageChange { page, _ ->
                 Timber.tag("page_check").d("onPageChange page:" + page)
                 currentPage = page
@@ -50,6 +51,7 @@ class MainActivity : AppCompatActivity() {
 
         binding.searchView.setOnCloseListener {
             binding.pdfView.setIsSearching(false)
+            binding.pdDocSelect.resetPointer()
             false
         }
     }
