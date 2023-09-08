@@ -15,6 +15,9 @@
  */
 package com.wordapp.pfdview;
 
+import static com.wordapp.pfdview.util.Constants.Pinch.MAXIMUM_ZOOM;
+import static com.wordapp.pfdview.util.Constants.Pinch.MINIMUM_ZOOM;
+
 import android.graphics.PointF;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
@@ -23,21 +26,16 @@ import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
-import android.widget.Toast;
 
+import com.shockwave.pdfium.PdfDocument;
+import com.shockwave.pdfium.util.Size;
+import com.shockwave.pdfium.util.SizeF;
 import com.wordapp.pfdview.exception.PageRenderingException;
 import com.wordapp.pfdview.model.LinkTapEvent;
 import com.wordapp.pfdview.scroll.ScrollHandle;
 import com.wordapp.pfdview.util.SnapEdge;
-import com.shockwave.pdfium.PdfDocument;
-import com.shockwave.pdfium.util.Size;
-import com.shockwave.pdfium.util.SizeF;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-
-import static com.wordapp.pfdview.util.Constants.Pinch.MAXIMUM_ZOOM;
-import static com.wordapp.pfdview.util.Constants.Pinch.MINIMUM_ZOOM;
 
 /**
  * This Manager takes care of moving the PDFView,
@@ -105,7 +103,7 @@ class DragPinchManager implements GestureDetector.OnGestureListener, GestureDete
         } else {
             onTapHandled = pdfView.callbacks.callOnTap(e);
         }
-        if(pdfView.pdfFile == null){
+        if (pdfView.pdfFile == null) {
             return true;
         }
         boolean linkTapped = checkLinkTapped(e.getX(), e.getY());
@@ -180,7 +178,7 @@ class DragPinchManager implements GestureDetector.OnGestureListener, GestureDete
                     ,  curX , curY , 10, 10);
 
         }*/
-        }catch (Exception e){
+        } catch (Exception e) {
             return -1;
         }
         return -1;
@@ -421,7 +419,7 @@ class DragPinchManager implements GestureDetector.OnGestureListener, GestureDete
                 }
             }
             return pdfView.pdfFile.pdfDocument.mNativeTextPtr.get(page);
-        }catch (Exception e){
+        } catch (Exception e) {
             return 0L;
         }
     }
@@ -490,10 +488,10 @@ class DragPinchManager implements GestureDetector.OnGestureListener, GestureDete
 
     @Override
     public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
-        if(pdfView.startInDrag){
+        if (pdfView.startInDrag) {
             if (pdfView.hideView != null)
                 pdfView.hideView.setVisibility(View.GONE);
-        }else{
+        } else {
             if (pdfView.hideView != null)
                 pdfView.hideView.setVisibility(View.VISIBLE);
         }
@@ -528,17 +526,18 @@ class DragPinchManager implements GestureDetector.OnGestureListener, GestureDete
 
     @Override
     public void onLongPress(MotionEvent e) {
-        if (pdfView.hasSelection) {
-            pdfView.clearSelection();
-        }
-        if (wordTapped(e.getX(), e.getY(), 1.5f)) {
-            pdfView.hasSelection = true;
-            if (pdfView.onSelection != null) {
-                pdfView.onSelection.onSelection(true);
-            }
-            draggingHandle = pdfView.handleRight;
-            sCursorPosStart.set(pdfView.handleRightPos.right, pdfView.handleRightPos.bottom);
-        }
+        // text selection
+//        if (pdfView.hasSelection) {
+//            pdfView.clearSelection();
+//        }
+//        if (wordTapped(e.getX(), e.getY(), 1.5f)) {
+//            pdfView.hasSelection = true;
+//            if (pdfView.onSelection != null) {
+//                pdfView.onSelection.onSelection(true);
+//            }
+//            draggingHandle = pdfView.handleRight;
+//            sCursorPosStart.set(pdfView.handleRightPos.right, pdfView.handleRightPos.bottom);
+//        }
         pdfView.callbacks.callOnLongPress(e);
     }
 
